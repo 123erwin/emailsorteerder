@@ -1,0 +1,167 @@
+============================================================
+EMAIL SORTEERDER — IMPLEMENTATIEPLAN V5.0 (HIGH SPEED EDITION)
+============================================================
+
+Doel: Het script extreem snel, betrouwbaar en onderhoudbaar maken.
+Finaal doel: 1000 e-mails classificeren binnen 0,1–10 seconden,
+met zelflerende caching en IMAP-automatisering.
+
+We voeren dit uit in overzichtelijke fasen.
+
+------------------------------------------------------------
+FASE 1 — High-Speed Batch & Streaming (performance x100)
+------------------------------------------------------------
+
+1. Body inkorten
+   - extract_text(msg)
+   - daarna clean_body = clean_body[:400]
+
+2. Batchgrootte verlagen naar 10 (tijdelijk voor stabiliteit)
+
+3. Nieuwe streaming-output (geen JSON!)
+   - De AI moet per regel output geven:
+       index=<nummer>; categorie=<categorie>
+   - Geen JSON, geen accolades, geen nested structures
+
+4. Nieuwe streaming-parser bouwen die:
+   - per regel “index=…; categorie=…” leest
+   - supersnel en onverwoestbaar werkt
+
+5. Nieuwe fallback-structuur:
+   - try streaming (1×)
+   - fallback batch (max 2 attempts)
+   - als dat mislukt → error loggen en skippen
+   - GEEN single-call fallback meer (te traag)
+
+Doel na fase 1:
+- 1000 e-mails in ~10–15 seconden
+
+
+------------------------------------------------------------
+FASE 2 — Sender-Based Caching (performance x100 extra)
+------------------------------------------------------------
+
+1. Cache toevoegen:
+   cache/sender_exact.json
+
+2. Bij start:
+   - Exact cache inlezen in SENDER_CACHE dict
+
+3. Voor elke e-mail:
+   - Als afzender in cache → instant classificatie
+   - Anders → toevoegen aan batch_payload
+
+4. Na succesvolle batch-classificatie:
+   - Voor elke afzender categorie opslaan in cache:
+       SENDER_CACHE[sender] = categorie
+
+5. Na elke batch cache wegschrijven naar JSON
+
+Doel na fase 2:
+- Eerste run: zeer snel
+- Tweede run: bijna geen AI-calls → 1000 mails in 0,3 sec
+
+
+------------------------------------------------------------
+FASE 3 — Domein-Deductie & Candidates List (semi-automatisch leren)
+------------------------------------------------------------
+
+1. Domeinstatistieken genereren uit sender_exact_cache:
+   - domein = deel na '@'
+   - per domein tellen hoeveel keer elke categorie voorkomt
+
+2. Domeinen beoordelen:
+   Een domein is “zuiver” als:
+   - ≥5 e-mails
+   - ≥95% dezelfde categorie
+   - categorie ≠ persoonlijk
+   - maximaal 1 categorie in counts
+
+3. Candidates lijst genereren:
+   In: cache/domain_candidates.json
+
+   Voorbeeld:
+   {
+     "kpnmail.nl": "bestellingen/facturen",
+     "nieuwsbrief.adobe.com": "nieuwsbrief"
+   }
+
+4. Jij beoordeelt deze lijst handmatig:
+   - Ja → toevoegen aan domain_cache.json
+   - Nee → verwijderen
+
+5. Domeincache toevoegen:
+   cache/domain_cache.json
+
+6. Logica:
+   Eerst exact-adres → anders domein → anders AI
+
+Doel na fase 3:
+- Script wordt zelflerend
+- AI-calls dalen elke dag
+
+
+------------------------------------------------------------
+FASE 4 — E-mail Routing: verplaatsen naar IMAP-mappen
+------------------------------------------------------------
+
+1. Voor elke categorie een IMAP-map maken of gebruiken
+   - /Spam
+   - /Nieuwsbrief
+   - /Reclame
+   - /BestellingenFacturen
+   - /Persoonlijk
+
+2. Na classificatie:
+   msg.uid gebruiken om e-mail te verplaatsen:
+
+   mailbox.move(uid, "FolderName")
+
+3. Logging uitbreiden met:
+   - nieuwe map
+   - status (verplaatst / error)
+
+4. Optioneel:
+   - map-aanmaak automatiseren
+   - mappen configurabel maken in config.json
+
+Doel na fase 4:
+- E-mails automatisch gesorteerd in jouw mailbox
+- Inbox blijft schoon
+
+
+------------------------------------------------------------
+FASE 5 — Verdere uitbreidingen (optioneel)
+------------------------------------------------------------
+
+1. Domein-heuristics (optioneel):
+   - “noreply” → kans nieuwsbrief
+   - “invoice” → kans factuur
+   - “mailer-daemon” → spam
+   (alleen gebruikt als fallback, nooit als hard rule)
+
+2. E-mail threading:
+   - Mails in dezelfde conversie volgen
+   - Reply detection
+
+3. Subject-pattern caching:
+   - Herkennen van veelvoorkomende onderwerpen
+
+4. Logging uitbreiden naar database (SQLite of JSONL)
+
+5. Web UI toevoegen (Flask / FastAPI):
+   - Overzicht van classificaties
+   - Overzicht domeinen
+   - Handmatige correcties
+
+6. Windows Task Scheduler integratie
+   - Dagelijkse automatisering
+
+Doel van fase 5:
+- “Enterprise"-kwaliteit mailrouter
+- Minimaal onderhoud, maximaal gemak
+
+
+============================================================
+EINDE VAN PLANNING V5.0
+============================================================

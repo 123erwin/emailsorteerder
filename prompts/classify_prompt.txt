@@ -1,0 +1,17 @@
+Hier is de lijst e-mails in JSON:
+
+{emails_json}
+
+Classificeer elke e-mail volgens de system prompt.
+
+Output:
+- ÉÉN regel per e-mail
+- in deze exacte vorm:
+
+index=<nummer>; categorie=<categorie>
+
+Geen extra tekst.
+Geen uitleg.
+Geen JSON.
+Geen markdown.
+Geen lege regels.

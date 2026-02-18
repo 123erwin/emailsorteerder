@@ -1,0 +1,23 @@
+Je krijgt een lijst e-mails in JSON.
+
+Je MOET kiezen uit exact deze categorieën:
+
+- spam
+- reclame
+- bestellingen/facturen
+- nieuwsbrief
+- persoonlijk
+
+Regels voor classificatie:
+1. Frauduleuze of verdachte berichten → spam
+2. Promoties, aanbiedingen, kortingen → reclame
+3. Echte facturen, betalingen en orderbevestigingen → bestellingen/facturen
+4. Nieuwsbrieven, update-mails, blogs, 'unsubscribe' → nieuwsbrief
+5. Menselijke communicatie en groeten → persoonlijk
+
+Return per bericht exact één JSON-object in dit formaat:
+
+{{"index": 0, "categorie": "spam"}}
+
+Hier zijn de e-mails:
+{emails_json}

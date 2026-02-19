@@ -133,16 +133,39 @@ def _extract_relevant_headers(msg) -> dict[str, str]:
             return ""
         return str(value).strip().lower()
 
+    def first_header(*names: str) -> str:
+        for name in names:
+            values = headers.get(name.lower())
+            if not values:
+                continue
+            if isinstance(values, (tuple, list)):
+                flattened = [str(v).strip() for v in values if str(v).strip()]
+                if flattened:
+                    return "; ".join(flattened)
+            else:
+                value = str(values).strip()
+                if value:
+                    return value
+        return ""
+
+    auth_results = first_header("Authentication-Results")
+
+    def auth_result(name: str) -> str:
+        if not auth_results:
+            return ""
+        match = re.search(rf"\b{re.escape(name)}\s*=\s*([a-z0-9_-]+)", auth_results, flags=re.IGNORECASE)
+        return match.group(1) if match else ""
+
     return {
-        "spf": norm(headers.get("Authentication-Results")),
-        "dkim": norm(headers.get("DKIM-Signature")),
-        "dmarc": norm(headers.get("DMARC-Filter")),
-        "return_path": norm(headers.get("Return-Path")),
-        "message_id": norm(headers.get("Message-ID")),
-        "list_id": norm(headers.get("List-ID")),
-        "list_unsubscribe": norm(headers.get("List-Unsubscribe")),
-        "precedence": norm(headers.get("Precedence")),
-        "x_mailer": norm(headers.get("X-Mailer")),
-        "x_spam_flag": norm(headers.get("X-Spam-Flag")),
-        "x_spam_status": norm(headers.get("X-Spam-Status")),
+        "spf": norm(auth_result("spf") or first_header("Received-SPF")),
+        "dkim": norm(auth_result("dkim") or first_header("DKIM-Signature")),
+        "dmarc": norm(auth_result("dmarc") or first_header("DMARC-Filter")),
+        "return_path": norm(first_header("Return-Path")),
+        "message_id": norm(first_header("Message-ID")),
+        "list_id": norm(first_header("List-ID")),
+        "list_unsubscribe": norm(first_header("List-Unsubscribe")),
+        "precedence": norm(first_header("Precedence")),
+        "x_mailer": norm(first_header("X-Mailer")),
+        "x_spam_flag": norm(first_header("X-Spam-Flag")),
+        "x_spam_status": norm(first_header("X-Spam-Status")),
     }

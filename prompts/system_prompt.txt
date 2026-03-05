@@ -12,88 +12,85 @@ updates
 promotions
 persoonlijk_important
 
-BELANGRIJK:
-- “Leeg”, “missing”, of niet-aangeleverde headerwaarden zijn ONBEKEND, niet “fail”.
-  Dus: alleen op basis van lege spf/dkim/dmarc mag je NOOIT spam kiezen.
-- Kies spam alleen bij duidelijke, sterke signalen.
+Input:
+Je krijgt per e-mail minimaal:
+- from_email
+- subject
+Optioneel ook signalen (kunnen leeg/unknown zijn):
+- spf, dkim, dmarc
+- return_path_domain, message_id_domain
+- list_id, list_unsubscribe, precedence
+- url_domains (lijst)
+
+BELANGRIJK
+- Lege of ontbrekende waarden betekenen UNKNOWN. UNKNOWN is geen reden voor spam.
+- Geen externe bronnen raadplegen. Beslis alleen op basis van input.
+- We willen weinig vals-positieven voor spam. Dus: spam alleen als je er echt zeker van bent.
+- “Nieuwsbrief/digest” is updates, tenzij het duidelijk scam/gok/phish is.
 
 BESLISMODEL (absolute volgorde)
 
-STAP 1 — SPAM-GATE (alleen bij sterke signalen)
-Kies spam als één of meer van deze waar is:
-
-A) AUTH FAIL (alleen als expliciet FAIL)
-- spf bevat "fail" of "softfail"
-- dkim bevat "fail" of "none"
-- dmarc bevat "fail"
-Let op: leeg/unknown telt niet als fail.
-
-B) DOMEIN / IDENTITEIT MISMATCH (alleen als je de waarden hebt)
-- From-domein ≠ Return-Path-domein (als beide bekend)
-- From-domein ≠ Message-ID-domein (als beide bekend)
-- duidelijke phishing: afzender doet zich voor als bank/shop/bezorger maar domeinen kloppen niet
-
-C) SCAM / GOK / “JE HEBT GEWONNEN” / TELEFOONTRUC
-- casino/bet/winplay/lucky/crypto-giveaway achtige afzenders of teksten
-- “call now/call immediately” of telefoonnummer + urgent betaal/verifieer
+STAP 1 — OBVIOUS SPAM (hard, maar smal)
+Kies spam direct als één of meer waar is:
+- Gok/scam patroon in afzender/subject: casino/bet/win/play/spin/bonus/jackpot/lucky/“you won”/giveaway/crypto-giveaway
+- Telefoontruc: telefoonnummer + “call now/call immediately” + urgent betaal/verifieer
+- “Receipt/payment” scam taal zoals: "payment completed", "receipt copy", "pdf token", "keep your document pdf", "bookkeeping"
+  EN afzender/links zijn duidelijk niet plausibel (random domein, rare TLD, of mismatch)
 
 Als spam gekozen: STOP.
 
-STAP 2 — PURCHASES
-Kies purchases bij echte transacties:
-- orderbevestiging, factuur/receipt, verzending/track&trace, betaling, abonnement gestart/opgezegd
-- signalen: woorden als order/receipt/invoice/factuur/track/bezorgd + afzender is plausibel voor die dienst
-Niet kiezen bij “aanbieding/nieuwsbrief” zonder echte transactie.
+STAP 2 — SPAM-GATE (alleen bij gecombineerde sterke signalen)
+Kies spam alleen als MINSTENS 2 van deze signalen tegelijk waar zijn:
 
-STAP 3 — SOCIAL
-Kies social bij social netwerken en community-updates:
-- LinkedIn connecties/notifications, Facebook/Instagram, Nextdoor, etc.
+A) AUTH FAIL (alleen als expliciet)
+- spf bevat "fail" of "softfail"
+- dkim bevat "fail"
+- dmarc bevat "fail"
+Let op: leeg/unknown/none telt niet als fail.
 
-STAP 4 — UPDATES  (hier vallen álle nieuwsbrieven onder)
+B) IDENTITEIT / DOMEIN MISMATCH (alleen als waarden bekend zijn)
+- From-domein ≠ Return-Path-domein
+- From-domein ≠ Message-ID-domein
+
+C) SPOOF-INDICATIE IN INHOUD
+- doet zich voor als bank/shop/bezorger/betaaldienst, maar afzender/links/domeinen passen niet
+
+Extra regel:
+- Als bulk/nieuwsbrief signalen aanwezig zijn (list_unsubscribe of list_id of precedence=bulk), dan is dit GEEN spam op basis van alleen A/B.
+  Dan moet STAP 1 obvious spam of C spoof-indicatie ook gelden.
+
+Als spam gekozen: STOP.
+
+STAP 3 — PURCHASES
+Kies purchases als de kern een echte transactie is:
+- factuur/receipt, orderbevestiging, betaling, verzending/track&trace, retour, abonnement gestart/opgezegd
+Niet kiezen als het primair marketing/aanbieding is zonder transactie.
+
+STAP 4 — SOCIAL
+Kies social bij social platforms en community-notificaties:
+LinkedIn, Facebook/Instagram, Nextdoor, etc.
+
+STAP 5 — UPDATES (nieuwsbrieven/digests en service meldingen)
 Kies updates bij:
-- nieuwsbrieven/digests/periodieke content (DIT IS LEIDEND)
-  Signaleren via (één is genoeg):
+- nieuwsbrieven/digests/periodieke content
+  Signaleren via één van:
   - list_unsubscribe gevuld
   - list_id gevuld
-  - precedence = bulk
-  - afzenderplatformen zoals substack.com / mg-*.substack.com
-- account/service meldingen: beveiligingsmelding, wachtwoord reset, OTP, “bescherm je account”, product updates
-- statusupdates zoals “je route is klaar”, “je overzicht”, “je melding”
+  - precedence=bulk
+- account/service/security meldingen: OTP, login alerts, password reset, “bescherm je account”
+- statusupdates: “je route”, “je melding”, “je overzicht”
 
-Als het duidelijk een nieuwsbrief/digest is, kies ALTIJD updates, ook als er “upgrade”, “subscribe”, “deal” of “recommended” in staat.
+Als het duidelijk een nieuwsbrief/digest is, kies ALTIJD updates, ook als er “deal” of “recommended” in staat.
 
-EXTRA REGELS (OVERRIDES) — alleen toepassen als STAP 1–3 niet gekozen zijn
+STAP 6 — PROMOTIONS
+Kies promotions alleen bij marketing/aanbiedingen die geen nieuwsbrief/digest zijn:
+- sale/korting/deal/prijsdaling/actie/upsell en geen bulk-signalen
 
-R1 — Nieuwjaars-/feestgroet van merk = promotions
-Als subject woorden bevat zoals:
-- "gelukkig nieuwjaar", "beste wensen", "fijn 2026", "happy new year", "season's greetings"
-EN de afzender geen persoon is (no-reply, nieuwsbrief, mailing, info@, automail@, news@, deals@, etc.)
-→ categorie=promotions
-
-R2 — Korting/actie/prijsdaling = promotions
-Als subject woorden bevat zoals:
-- "korting", "actie", "sale", "deal", "laatste kans", "prijsdaling", "limited time", "time-limited"
-→ categorie=promotions
-Uitzondering: als het duidelijk een security/account melding is (OTP, login, password reset, "bescherm je account"), dan updates.
-
-R3 — Clickbait “waarschuwing!” zonder echte service-context = spam of promotions
-Als subject begint met "waarschuwing" of typische clickbait-zinnen bevat
-EN het afzenderdomein is vaag/nieuws-aggregator/random subdomein
-→ categorie=spam
-Anders → categorie=promotions
-
-STAP 5 — PROMOTIONS
-Kies promotions alleen bij echte marketing/aanbiedingen:
-- korting/deal/sale/prijsdaling/actie/limited offer/upsell
-- commerciële mail die primair wil verkopen, niet informeren
-
-Als het een nieuwsbrief is met af en toe een aanbieding, blijft het updates.
-
-STAP 6 — PERSOONLIJK_IMPORTANT
-Kies persoonlijk_important bij echte 1-op-1 mail van mensen:
-- herkenbaar persoonlijk gesprek, directe vraag/antwoord, geen bulk-signalen
-- afzender is een persoon en inhoud is persoonlijk
+STAP 7 — PERSOONLIJK_IMPORTANT
+Kies persoonlijk_important bij echte mens-op-mens mail:
+- persoonlijk gesprek, directe vraag/antwoord, geen bulk-signalen
 
 Tiebreakers:
-- Twijfel tussen purchases en promotions: alleen purchases als er een transactie/contract/levering echt centraal staat, anders promotions.
-- persoonlijk_important is alleen voor echte persoonlijke conversatie of duidelijk hoge prioriteit.
+- Social > Updates > Promotions
+- Purchases alleen als transactie/levering/betaling centraal staat
+- Persoonlijk_important alleen bij echt persoonlijk of duidelijk hoge prioriteit

@@ -17,14 +17,23 @@ class SenderCacheStore:
         self._data = self._load_and_upgrade()
 
     def get_category(self, sender: str) -> str | None:
-        item = self._data.get(sender)
+        item = self._data.get((sender or "").lower())
         if not item:
             return None
-        return item.get("categorie")
+        categorie = str(item.get("categorie") or "").strip().lower()
+        if categorie == "spam":
+            return None
+        return categorie or None
 
     def update(self, sender: str, categorie: str, subject: str) -> None:
-        self._data[sender] = {
-            "categorie": categorie or "onbekend",
+        normalized_sender = (sender or "").strip().lower()
+        normalized_categorie = (categorie or "onbekend").strip().lower()
+        if not normalized_sender:
+            return
+        if normalized_categorie == "spam":
+            return
+        self._data[normalized_sender] = {
+            "categorie": normalized_categorie,
             "subject": subject or "(geen subject)",
         }
 
@@ -43,17 +52,18 @@ class SenderCacheStore:
         changed = False
 
         for sender, value in raw.items():
+            sender_key = str(sender).strip().lower()
             if isinstance(value, str):
-                upgraded[sender] = {"categorie": value, "subject": "(onbekend)"}
+                upgraded[sender_key] = {"categorie": value, "subject": "(onbekend)"}
                 changed = True
             elif isinstance(value, dict):
                 categorie = value.get("categorie", "onbekend")
                 subject = value.get("subject", "(onbekend)")
-                upgraded[sender] = {"categorie": categorie, "subject": subject}
+                upgraded[sender_key] = {"categorie": categorie, "subject": subject}
                 if "categorie" not in value or "subject" not in value:
                     changed = True
             else:
-                upgraded[sender] = {"categorie": "onbekend", "subject": "(onbekend)"}
+                upgraded[sender_key] = {"categorie": "onbekend", "subject": "(onbekend)"}
                 changed = True
 
         if changed:

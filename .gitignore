@@ -6,3 +6,6 @@ venv/
 logs/
 cache/
 config/local.env
+.pycache_tmp/
+.tmp_test_runs/
+.tmp_test_runs_subject/

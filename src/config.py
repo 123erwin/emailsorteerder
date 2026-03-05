@@ -34,7 +34,10 @@ class Settings:
     project_root: Path
     prompts_dir: Path
     log_dir: Path
+    cache_dir: Path
     cache_file: Path
+    domain_cache_file: Path
+    sender_spam_cache_file: Path
     system_prompt_file: Path
     classify_prompt_file: Path
     runstamp: str
@@ -52,6 +55,10 @@ class Settings:
     max_body_chars: int
     log_gpt_payload: bool
     log_to_console: bool
+    use_spam_sender_cache: bool
+    spam_hits_threshold: int
+    imap_move_by_category: bool
+    imap_category_prefix: str
 
 
 def load_settings() -> Settings:
@@ -69,7 +76,10 @@ def load_settings() -> Settings:
         project_root=PROJECT_ROOT,
         prompts_dir=prompts_dir,
         log_dir=log_dir,
+        cache_dir=cache_dir,
         cache_file=cache_file,
+        domain_cache_file=Path(os.getenv("DOMAIN_CACHE_FILE", str(cache_dir / "domain_cache.json"))),
+        sender_spam_cache_file=Path(os.getenv("SENDER_SPAM_CACHE_FILE", str(cache_dir / "sender_spam_cache.json"))),
         system_prompt_file=system_prompt_file,
         classify_prompt_file=classify_prompt_file,
         runstamp=runstamp,
@@ -85,6 +95,10 @@ def load_settings() -> Settings:
         max_body_chars=max(50, _env_int("MAX_BODY_CHARS", 250)),
         log_gpt_payload=_env_bool("LOG_GPT_PAYLOAD", True),
         log_to_console=_env_bool("LOG_TO_CONSOLE", True),
+        use_spam_sender_cache=_env_bool("USE_SPAM_SENDER_CACHE", True),
+        spam_hits_threshold=max(1, _env_int("SPAM_HITS_THRESHOLD", 2)),
+        imap_move_by_category=_env_bool("IMAP_MOVE_BY_CATEGORY", False),
+        imap_category_prefix=os.getenv("IMAP_CATEGORY_PREFIX", "AI/"),
     )
     _validate_required(settings)
     return settings

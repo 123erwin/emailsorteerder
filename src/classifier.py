@@ -58,22 +58,23 @@ class EmailClassifier:
     def _build_payload(self, batch: list) -> list[dict]:
         payload = []
         for idx, msg in enumerate(batch):
-            body_snippet = _extract_text(msg, self.settings.max_body_chars)
-            html_raw = msg.html or ""
-            payload.append(
-                {
-                    "index": idx,
-                    "subject": msg.subject or "",
-                    "from": msg.from_,
-                    "to": msg.to,
-                    "cc": msg.cc,
-                    "date": msg.date.isoformat() if msg.date else "",
-                    "body_snippet": body_snippet,
-                    "urls": _extract_urls(body_snippet, html_raw),
-                    "headers": _extract_relevant_headers(msg),
-                }
-            )
+            payload.append(self.build_email_payload(msg, idx))
         return payload
+
+    def build_email_payload(self, msg, index: int = 0) -> dict:
+        body_snippet = _extract_text(msg, self.settings.max_body_chars)
+        html_raw = msg.html or ""
+        return {
+            "index": index,
+            "subject": msg.subject or "",
+            "from": msg.from_,
+            "to": msg.to,
+            "cc": msg.cc,
+            "date": msg.date.isoformat() if msg.date else "",
+            "body_snippet": body_snippet,
+            "urls": _extract_urls(body_snippet, html_raw),
+            "headers": _extract_relevant_headers(msg),
+        }
 
     @staticmethod
     def _parse_results(raw: str) -> dict[int, str]:
